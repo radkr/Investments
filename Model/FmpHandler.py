@@ -108,3 +108,10 @@ class FmpHandler(Company):
 
     def getForm(self, form):
         return self.loadFromCache(form)
+
+    def getDividends(self):
+        form = self.getForm("IncomeAnnual")
+        dividents = []
+        for financials in form['financials']:
+            dividents.append(float(financials['Dividend per Share']))
+        return dividents

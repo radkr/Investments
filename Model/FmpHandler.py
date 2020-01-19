@@ -13,22 +13,12 @@ class FmpHandler(Company):
         date = datetime.datetime.now().date()
         self.path = os.getcwd()
 
-        try:
-            self.path = self.path + "\\" + str(date)
-            os.mkdir(self.path)
-        except OSError:
-            print("Creation of the directory %s failed" % self.path)
-        else:
-            print("Successfully created the directory %s " % self.path)
-
-        try:
-            self.path = self.path + "\\" + ticker
-            os.mkdir(self.path)
-        except OSError:
-            print("Creation of the directory %s failed" % self.path)
-        else:
-            print("Successfully created the directory %s " % self.path)
-
+        self.path = self.path + "\\" + "FmpHandler"
+        FileHandler.createFolder(self.path)
+        self.path = self.path + "\\" + str(date)
+        FileHandler.createFolder(self.path)
+        self.path = self.path + "\\" + ticker
+        FileHandler.createFolder(self.path)
         self.path = self.path + "\\"
 
         self.dbs = {
@@ -70,9 +60,12 @@ class FmpHandler(Company):
     def cache(self, form):
         filePath = self.getFilePath(form)
 
-        value = FileHandler.read(filePath)
-        self.dbs[form]["value"] = value
-        return value
+        if os.path.isfile(filePath) is True:
+            value = FileHandler.read(filePath)
+            self.dbs[form]["value"] = value
+            return value
+        else:
+            return None
 
     def cacheAll(self):
 

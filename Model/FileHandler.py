@@ -1,7 +1,17 @@
 import json
 import os
+from Model.Console import Console
 
 class FileHandler:
+
+    @staticmethod
+    def createFolder(path):
+        try:
+            os.mkdir(path)
+        except OSError:
+            Console.print(FileHandler, "Creation of the directory %s failed" % path)
+        else:
+            Console.print(FileHandler, "Successfully created the directory %s " % path)
 
     @staticmethod
     def read(filePath, encoding=None):

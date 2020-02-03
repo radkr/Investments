@@ -58,14 +58,7 @@ class YfHandler:
             "DividendHistory": {"url": dividentHistoryUrl}
         }
 
-        if self.workFromArchive is False:
-            # Starting Browser if do not exist
-            if YfHandler.browserUserCnt == 0:
-                YfHandler.startBrowser()
-            YfHandler.browserUserCnt = YfHandler.browserUserCnt + 1
-
-            # Set Browser download path
-            self.setBrowserDownloadPath()
+        YfHandler.browserUserCnt = YfHandler.browserUserCnt + 1
 
     def __del__(self):
         YfHandler.browserUserCnt = YfHandler.browserUserCnt - 1
@@ -74,25 +67,28 @@ class YfHandler:
 
     @staticmethod
     def startBrowser():
-        options = webdriver.ChromeOptions()
+        if YfHandler.browser is None:
+            options = webdriver.ChromeOptions()
 
-        options.add_experimental_option("prefs", {
-            "download.default_directory": "/path/to/download/dir",
-            "download.prompt_for_download": False,
-        })
+            options.add_experimental_option("prefs", {
+                "download.default_directory": "/path/to/download/dir",
+                "download.prompt_for_download": False,
+            })
 
-        options.add_argument('--headless')
+            options.add_argument('--headless')
 
-        YfHandler.browser = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+            YfHandler.browser = webdriver.Chrome(ChromeDriverManager().install(), options=options)
 
     @staticmethod
     def stopBrowser():
-        YfHandler.browser.quit()
+        if YfHandler.browser is not None:
+            YfHandler.browser.quit()
 
-    def setBrowserDownloadPath(self):
+    @staticmethod
+    def setBrowserDownloadPath(path):
         # add missing support for chrome "send_command"  to selenium webdriver
         YfHandler.browser.command_executor._commands["send_command"] = ("POST", '/session/$sessionId/chromium/send_command')
-        params = {'cmd': 'Page.setDownloadBehavior', 'params': {'behavior': 'allow', 'downloadPath': self.path}}
+        params = {'cmd': 'Page.setDownloadBehavior', 'params': {'behavior': 'allow', 'downloadPath': path}}
         command_result = YfHandler.browser.execute("send_command", params)
 
     def getFilePath(self, form):
@@ -105,6 +101,11 @@ class YfHandler:
 
     def download(self, form):
         if self.workFromArchive is False:
+            # Start Browser
+            YfHandler.startBrowser()
+            # Set Browser download path
+            YfHandler.setBrowserDownloadPath(self.path)
+
             if form == "DividendHistory":
                 self.downloadDividendHistory()
         else:

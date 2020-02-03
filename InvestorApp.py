@@ -20,7 +20,8 @@ if __name__ == '__main__':
     print(dgiChecker.dividendPaymentContinuity)
     print(dgiChecker.dividends)
 
-    handler = YfHandler("AAPL")
+    #handler = YfHandler("AAPL", datetime.date(1970, 1, 1))
+    handler = YfHandler("AAPL", datetime.datetime.now().date())
     form = handler.getForm("DividendHistory")
     print(form)
 

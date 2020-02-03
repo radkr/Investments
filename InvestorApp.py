@@ -1,9 +1,14 @@
 from Model.CompanyChecker import DgiChecker
+from Model.FileHandler import FileHandler
 from Model.FmpHandler import FmpHandler
 from Model.YfHandler import YfHandler
 
+import csv
+import datetime
+
 if __name__ == '__main__':
-    handler = FmpHandler("AAPL")
+    #handler = FmpHandler("AAPL", datetime.date(1970, 1, 1))
+    handler = FmpHandler("AAPL", datetime.datetime.now().date())
     #handler.downloadAll()
     handler.cacheAll()
     handler.save()
@@ -16,5 +21,8 @@ if __name__ == '__main__':
     print(dgiChecker.dividends)
 
     handler = YfHandler("AAPL")
-    print(handler.dbs)
-    handler.getForm("DividendHistory")
+    form = handler.getForm("DividendHistory")
+    print(form)
+
+
+

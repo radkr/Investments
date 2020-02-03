@@ -7,7 +7,8 @@ class FileHandler:
     @staticmethod
     def createFolder(path):
         try:
-            os.mkdir(path)
+            if os.path.isdir(path) is False:
+                os.mkdir(path)
         except OSError:
             Console.print(FileHandler, "Creation of the directory %s failed" % path)
         else:
@@ -28,8 +29,10 @@ class FileHandler:
 
         jsonString = json.dumps(dictionary, sort_keys=True, indent=4,
                                 separators=(',', ': '))
-
-        FileHandler.writeTextFile(filePath, jsonString, encoding)
+        try:
+            FileHandler.writeTextFile(filePath, jsonString, encoding)
+        except:
+            Console.print(FileHandler, "No such file or directory: " + filePath)
 
     @staticmethod
     def readTextFile(filePath, encoding=None):

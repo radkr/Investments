@@ -8,17 +8,30 @@ from Model.Company import Company
 
 class FmpHandler(Company):
 
-    def __init__(self, ticker):
+    def __init__(self, ticker, dateOfInterest = None):
         self.ticker = ticker
-        date = datetime.datetime.now().date()
+
+        if dateOfInterest is None:
+            date = datetime.datetime.now().date()
+        else:
+            date = dateOfInterest
+
+        if date == datetime.datetime.now().date():
+            self.workFromArchive = False
+        else:
+            self.workFromArchive = True
+
         self.path = os.getcwd()
 
         self.path = self.path + "\\" + "FmpHandler"
-        FileHandler.createFolder(self.path)
+        if self.workFromArchive is False:
+            FileHandler.createFolder(self.path)
         self.path = self.path + "\\" + str(date)
-        FileHandler.createFolder(self.path)
+        if self.workFromArchive is False:
+            FileHandler.createFolder(self.path)
         self.path = self.path + "\\" + ticker
-        FileHandler.createFolder(self.path)
+        if self.workFromArchive is False:
+            FileHandler.createFolder(self.path)
         self.path = self.path + "\\"
 
         self.dbs = {
@@ -40,17 +53,22 @@ class FmpHandler(Company):
                 "DcfAnnual": {"url": "https://financialmodelingprep.com/api/v3/company/historical-discounted-cash-flow/"+self.ticker},
                 "DcfQuarterly": {"url": "https://financialmodelingprep.com/api/v3/company/historical-discounted-cash-flow/"+self.ticker+"?period=quarter"},
                 "StockPrice": {"url": "https://financialmodelingprep.com/api/v3/historical-price-full/AAPL"+self.ticker+"?serietype=line"},
-                "StockPriceChangeVolume": {"url": "https://financialmodelingprep.com/api/v3/historical-price-full/"+self.ticker}
+                "StockPriceChangeVolume": {"url": "https://financialmodelingprep.com/api/v3/historical-price-full/"+self.ticker},
+                "DividendHistory": {"url": "https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/"+self.ticker},
+                "SplitHistory": {"url": "https://financialmodelingprep.com/api/v3/historical-price-full/stock_split/"+self.ticker}
                 }
 
     def getFilePath(self, form):
         return self.path + self.ticker + "_" + form + ".json"
 
     def download(self, form):
-        url = self.dbs[form]["url"]
-        filePath = self.getFilePath(form)
+        if self.workFromArchive is False:
+            url = self.dbs[form]["url"]
+            filePath = self.getFilePath(form)
 
-        urllib.request.urlretrieve(url, filePath)
+            urllib.request.urlretrieve(url, filePath)
+        else:
+            Console.print(FmpHandler, "Download disabled, working from archive: " + form + " of " + self.ticker)
 
     def downloadAll(self):
 
@@ -105,6 +123,8 @@ class FmpHandler(Company):
     def getDividends(self):
         form = self.getForm("IncomeAnnual")
         dividents = []
-        for financials in form['financials']:
-            dividents.append(float(financials['Dividend per Share']))
+        if form is not None:
+            for financials in form['financials']:
+                dividents.append(float(financials['Dividend per Share']))
+
         return dividents

@@ -1,3 +1,4 @@
+from Model.Company import CompositeCompany
 from Model.CompanyChecker import DgiChecker
 from Model.FileHandler import FileHandler
 from Model.FmpHandler import FmpHandler
@@ -7,23 +8,13 @@ import csv
 import datetime
 
 if __name__ == '__main__':
-    #handler = FmpHandler("AAPL", datetime.date(1970, 1, 1))
-    handler = FmpHandler("AAPL", datetime.datetime.now().date())
-    #handler.downloadAll()
-    handler.cacheAll()
-    handler.save()
-    handler.getForm("Profile")
 
-    dgiChecker = DgiChecker(handler)
+    company = CompositeCompany("AAPL")
+
+    dgiChecker = DgiChecker(company)
     dgiChecker.check()
-    print(dgiChecker.dividendGrowthContinuity)
-    print(dgiChecker.dividendPaymentContinuity)
-    print(dgiChecker.dividends)
 
-    #handler = YfHandler("AAPL", datetime.date(1970, 1, 1))
-    handler = YfHandler("AAPL", datetime.datetime.now().date())
-    form = handler.getForm("DividendHistory")
-    print(form)
+    print(company.reports["dgi"])
 
 
 

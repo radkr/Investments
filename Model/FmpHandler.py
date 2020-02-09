@@ -1,38 +1,18 @@
 import urllib.request
 import datetime
 import os
+
+from Model.BaseHandler import BaseHandler
 from Model.FileHandler import FileHandler
 from Model.Console import Console
-from Model.Company import Company
 
 
-class FmpHandler(Company):
+class FmpHandler(BaseHandler):
 
-    def __init__(self, ticker, dateOfInterest = None):
-        self.ticker = ticker
+    handler_name = "FmpHandler"
 
-        if dateOfInterest is None:
-            date = datetime.datetime.now().date()
-        else:
-            date = dateOfInterest
-
-        if date == datetime.datetime.now().date():
-            self.workFromArchive = False
-        else:
-            self.workFromArchive = True
-
-        self.path = os.getcwd()
-
-        self.path = self.path + "\\" + "FmpHandler"
-        if self.workFromArchive is False:
-            FileHandler.createFolder(self.path)
-        self.path = self.path + "\\" + str(date)
-        if self.workFromArchive is False:
-            FileHandler.createFolder(self.path)
-        self.path = self.path + "\\" + ticker
-        if self.workFromArchive is False:
-            FileHandler.createFolder(self.path)
-        self.path = self.path + "\\"
+    def __init__(self, ticker, date_of_interest=None):
+        super().__init__(ticker, date_of_interest)
 
         self.dbs = {
                 "Profile": {"url": "https://financialmodelingprep.com/api/v3/company/profile/"+self.ticker},
@@ -58,70 +38,22 @@ class FmpHandler(Company):
                 "SplitHistory": {"url": "https://financialmodelingprep.com/api/v3/historical-price-full/stock_split/"+self.ticker}
                 }
 
-    def getFilePath(self, form):
-        return self.path + self.ticker + "_" + form + ".json"
-
     def download(self, form):
         if self.workFromArchive is False:
             url = self.dbs[form]["url"]
-            filePath = self.getFilePath(form)
+            filePath = self.get_file_path(form)
 
             urllib.request.urlretrieve(url, filePath)
         else:
             Console.print(FmpHandler, "Download disabled, working from archive: " + form + " of " + self.ticker)
 
-    def downloadAll(self):
-
-        for key in self.dbs.keys():
-            self.download(key)
-
-    def cache(self, form):
-        filePath = self.getFilePath(form)
-
-        if os.path.isfile(filePath) is True:
-            value = FileHandler.read(filePath)
-            self.dbs[form]["value"] = value
-            return value
-        else:
-            return None
-
-    def cacheAll(self):
-
-        for key in self.dbs.keys():
-            self.cache(key)
-
     def save(self):
-        filePath = self.getFilePath("")
+        filePath = self.get_file_path("")
 
         FileHandler.write(filePath, self.dbs)
 
-    def loadFromUrl(self, form):
-        Console.print(FmpHandler, "loadFromUrl: " + form + " of " + self.ticker)
-        self.download(form)
-        return self.cache(form)
-
-    def loadFromFile(self, form):
-        filePath = self.getFilePath(form)
-
-        if os.path.isfile(filePath) is True:
-            Console.print(FmpHandler, "loadFromFile: " + form + " of " + self.ticker)
-            return self.cache(form)
-        else:
-            return self.loadFromUrl(form)
-
-    def loadFromCache(self, form):
-
-        if "value" in self.dbs[form].keys():
-            Console.print(FmpHandler, "loadFromCache: " + form + " of " + self.ticker)
-            return self.dbs[form]["value"]
-        else:
-            return self.loadFromFile(form)
-
-    def getForm(self, form):
-        return self.loadFromCache(form)
-
     def getDividends(self):
-        form = self.getForm("IncomeAnnual")
+        form = self.get_form("IncomeAnnual")
         dividents = []
         if form is not None:
             for financials in form['financials']:

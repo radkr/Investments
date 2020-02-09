@@ -1,50 +1,26 @@
 import datetime
-import os
 from time import sleep
 from Model.Console import Console
-
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
 from Model.FileHandler import FileHandler
 
 import csv
 
+from Model.ScrapeHandler import ScrapeHandler
 
-class YfHandler:
+
+class YfHandler(ScrapeHandler):
+
+    handler_name = "YfHandler"
 
     baseDate = datetime.date(1970, 1, 1)
-    browserUserCnt = 0
-    browser = None
 
-    def __init__(self, ticker, dateOfInterest = None):
-        self.ticker = ticker
+    def __init__(self, ticker, date_of_interest = None):
 
-        if dateOfInterest is None:
-            date = datetime.datetime.now().date()
-        else:
-            date = dateOfInterest
-
-        if date == datetime.datetime.now().date():
-            self.workFromArchive = False
-        else:
-            self.workFromArchive = True
-
-        self.path = os.getcwd()
-
-        self.path = self.path + "\\" + "YfHandler"
-        if self.workFromArchive is False:
-            FileHandler.createFolder(self.path)
-        self.path = self.path + "\\" + str(date)
-        if self.workFromArchive is False:
-            FileHandler.createFolder(self.path)
-        self.path = self.path + "\\" + ticker
-        if self.workFromArchive is False:
-            FileHandler.createFolder(self.path)
-        self.path = self.path + "\\"
+        super().__init__(ticker, date_of_interest)
 
         self.startDate = datetime.date(1962, 1, 2)
         self.stopDate = datetime.datetime.now().date()
@@ -58,42 +34,6 @@ class YfHandler:
             "DividendHistory": {"url": dividentHistoryUrl}
         }
 
-        YfHandler.browserUserCnt = YfHandler.browserUserCnt + 1
-
-    def __del__(self):
-        YfHandler.browserUserCnt = YfHandler.browserUserCnt - 1
-        if YfHandler.browserUserCnt == 0:
-            YfHandler.stopBrowser()
-
-    @staticmethod
-    def startBrowser():
-        if YfHandler.browser is None:
-            options = webdriver.ChromeOptions()
-
-            options.add_experimental_option("prefs", {
-                "download.default_directory": "/path/to/download/dir",
-                "download.prompt_for_download": False,
-            })
-
-            options.add_argument('--headless')
-
-            YfHandler.browser = webdriver.Chrome(ChromeDriverManager().install(), options=options)
-
-    @staticmethod
-    def stopBrowser():
-        if YfHandler.browser is not None:
-            YfHandler.browser.quit()
-
-    @staticmethod
-    def setBrowserDownloadPath(path):
-        # add missing support for chrome "send_command"  to selenium webdriver
-        YfHandler.browser.command_executor._commands["send_command"] = ("POST", '/session/$sessionId/chromium/send_command')
-        params = {'cmd': 'Page.setDownloadBehavior', 'params': {'behavior': 'allow', 'downloadPath': path}}
-        command_result = YfHandler.browser.execute("send_command", params)
-
-    def getFilePath(self, form):
-        return self.path + self.ticker + "_" + form + ".json"
-
     @staticmethod
     def yfDateRepresentation(date):
         diff = date - YfHandler.baseDate
@@ -102,22 +42,26 @@ class YfHandler:
     def download(self, form):
         if self.workFromArchive is False:
             # Start Browser
-            YfHandler.startBrowser()
+            YfHandler.start_browser()
             # Set Browser download path
-            YfHandler.setBrowserDownloadPath(self.path)
+            YfHandler.set_browser_download_path(self.path)
 
             if form == "DividendHistory":
-                self.downloadDividendHistory()
+                self.download_dividend_history()
         else:
             Console.print(YfHandler, "Download disabled, working from archive: " + form + " of " + self.ticker)
 
-    def downloadDividendHistory(self):
+    def download_dividend_history(self):
         url = self.dbs["DividendHistory"]["url"]
-        filePath = self.getFilePath("DividendHistory")
+        filePath = self.get_file_path("DividendHistory")
 
         YfHandler.browser.get(url)
-        okButton = YfHandler.browser.find_element_by_name("agree")
-        okButton.click()
+
+        try:
+            okButton = self.get_browser().find_element_by_name("agree")
+            okButton.click()
+        except NoSuchElementException:
+            print("No OK button found.")
 
         timeout = 5
         try:
@@ -171,41 +115,6 @@ class YfHandler:
             Dividends["historical"].append(DividendList[i][1])
 
         FileHandler.write(filePath, Dividends)
-
-    def cache(self, form):
-        filePath = self.getFilePath(form)
-
-        if os.path.isfile(filePath) is True:
-            value = FileHandler.read(filePath)
-            self.dbs[form]["value"] = value
-            return value
-        else:
-            return None
-
-    def loadFromUrl(self, form):
-        Console.print(YfHandler, "loadFromUrl: " + form + " of " + self.ticker)
-        self.download(form)
-        return self.cache(form)
-
-    def loadFromFile(self, form):
-        filePath = self.getFilePath(form)
-
-        if os.path.isfile(filePath) is True:
-            Console.print(YfHandler, "loadFromFile: " + form + " of " + self.ticker)
-            return self.cache(form)
-        else:
-            return self.loadFromUrl(form)
-
-    def loadFromCache(self, form):
-
-        if "value" in self.dbs[form].keys():
-            Console.print(YfHandler, "loadFromCache: " + form + " of " + self.ticker)
-            return self.dbs[form]["value"]
-        else:
-            return self.loadFromFile(form)
-
-    def getForm(self, form: str):
-        return self.loadFromCache(form)
 
 
 
